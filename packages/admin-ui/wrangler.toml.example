@@ -1,0 +1,21 @@
+name = "woof-admin"
+main = "./worker.ts"
+compatibility_date = "2025-04-01"
+
+[[routes]]
+pattern = "woof.example.com/*"
+zone_name = "example.com"
+
+[assets]
+directory = "./build/client"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[[services]]
+binding = "API"
+service = "woof-api"
+
+[vars]
+SERVICE_URL = "https://woof.example.com"

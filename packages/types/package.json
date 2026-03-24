@@ -1,0 +1,29 @@
+{
+  "name": "@woof/types",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Shared TypeScript types for Woof — flag data model, OFREP shapes, admin API contracts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tobbbles/woof.git",
+    "directory": "packages/types"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

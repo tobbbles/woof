@@ -1,0 +1,6 @@
+ACCESS_TEAM_DOMAIN=https://myteam.cloudflareaccess.com
+ACCESS_AUD=your-application-audience-tag
+# Optional: API key for OFREP endpoints (if you want auth on evaluation routes)
+# OFREP_API_KEY=your-api-key
+# Optional: CORS origins for local dev
+# CORS_ORIGINS=http://localhost:3000

@@ -1,0 +1,30 @@
+name = "woof-api"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Run `yarn setup` to configure routes, KV, and secrets automatically.
+# Or fill these in manually — see README.md § Manual setup.
+
+[[routes]]
+pattern = "woof.example.com/api/v1/*"
+zone_name = "example.com"
+
+[[routes]]
+pattern = "woof.example.com/ofrep/v1/*"
+zone_name = "example.com"
+
+[[routes]]
+pattern = "woof.example.com/healthz"
+zone_name = "example.com"
+
+[[kv_namespaces]]
+binding = "FLAGS"
+id = "REPLACE_ME"
+preview_id = "REPLACE_ME_PREVIEW"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[vars]
+CORS_ORIGINS = ""

@@ -15,3 +15,25 @@ node_modules
 
 #!.yarn/cache
 .pnp.*
+
+# Build outputs
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Local dev secrets
+.dev.vars
+
+# Wrangler config (contains real KV IDs, domains, secrets)
+# Use wrangler.toml.example as the tracked template.
+packages/*/wrangler.toml
+
+packages/**/.wrangler/
+
+# Environment files
+.env.local
+.env*.local
+
+# Editor/tool config
+.claude/

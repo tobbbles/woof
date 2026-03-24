@@ -1,4 +1,24 @@
 {
   "name": "woof",
-  "packageManager": "yarn@4.13.0"
+  "packageManager": "yarn@4.13.0",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "yarn workspaces foreach -A -p -i -j unlimited run dev",
+    "build": "yarn workspaces foreach -A -t run build",
+    "test": "yarn workspaces foreach -A -t run test",
+    "typecheck": "yarn workspaces foreach -A -t run typecheck",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "deploy": "yarn workspace @woof/service deploy && yarn workspace @woof/admin-ui deploy",
+    "setup": "yarn workspace @woof/cli build && yarn node packages/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.8",
+    "@vitest/coverage-v8": "^4.1.1",
+    "vitest": "^4.1.1"
+  }
 }

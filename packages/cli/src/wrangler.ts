@@ -16,6 +16,13 @@ export interface WranglerKvNamespace {
   preview_id?: string;
 }
 
+export interface WranglerD1Database {
+  binding: string;
+  database_name: string;
+  database_id: string;
+  migrations_dir?: string;
+}
+
 export interface WranglerAssets {
   directory: string;
 }
@@ -26,6 +33,7 @@ export interface WranglerConfig {
   compatibility_date?: string;
   routes?: WranglerRoute[];
   kv_namespaces?: WranglerKvNamespace[];
+  d1_databases?: WranglerD1Database[];
   assets?: WranglerAssets;
   vars?: Record<string, string>;
 }
@@ -61,7 +69,7 @@ export function wrangler(args: string, cwd: string, onOutput?: (line: string) =>
   return new Promise((resolve) => {
     const child = spawn("npx", ["wrangler", ...args.split(" ")], {
       cwd,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ["ignore", "pipe", "pipe"],
       shell: true,
     });
 

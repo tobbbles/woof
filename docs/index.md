@@ -1,6 +1,6 @@
 # Woof
 
-**Woof** (Workers on Open Feature) is a feature flag service that runs entirely on [Cloudflare Workers](https://workers.cloudflare.com/). It stores flag definitions in Cloudflare KV, evaluates them via an [OFREP](https://openfeature.dev)-compliant API, and includes an admin UI for managing flags, targeting rules, and user segments.
+**Woof** (Workers on Open Feature) is a feature flag service that runs entirely on [Cloudflare Workers](https://workers.cloudflare.com/). It stores flag definitions in Cloudflare KV, audit history in Cloudflare D1, and evaluates them via an [OFREP](https://openfeature.dev)-compliant API. It includes an admin UI for managing flags, targeting rules, and user segments.
 
 Each team deploys their own isolated instance to their Cloudflare account. There are no shared servers, no third-party data processors, and no per-seat pricing — just your flags on your infrastructure.
 
@@ -53,7 +53,8 @@ Every flag, rule, segment, and settings change is recorded in an append-only aud
 | **@woof/evaluation** | Pure TypeScript | Flag evaluation engine (no I/O) |
 | **@woof/types** | TypeScript | Shared type definitions |
 | **@woof/cli** | Node.js CLI | Interactive setup wizard |
-| **Cloudflare KV** | Key-value store | Flag, rule, segment, and audit storage |
+| **Cloudflare KV** | Key-value store | Flag, rule, and segment storage |
+| **Cloudflare D1** | SQL database | Audit log storage |
 | **Cloudflare Access** | Zero Trust SSO | Admin authentication |
 
 ## Guides

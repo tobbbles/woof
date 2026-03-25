@@ -10,7 +10,8 @@
     "build": "tsc --build",
     "typecheck": "tsc --build --noEmit",
     "clean": "rm -rf dist",
-    "types": "wrangler types"
+    "types": "wrangler types",
+    "test": "npx vitest run"
   },
   "dependencies": {
     "@woof/evaluation": "workspace:*",

@@ -282,4 +282,4 @@ Every change — flag created, rule updated, segment deleted, settings modified 
 - **Entity** that was affected
 - **Details** describing the change
 
-The audit log is append-only and retains the most recent 500 entries.
+The audit log is append-only and stored in a D1 database, with no cap on the number of entries retained.

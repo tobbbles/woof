@@ -23,6 +23,8 @@ interface ExistingConfig {
   zoneName: string | undefined;
   kvId: string | undefined;
   kvPreviewId: string | undefined;
+  d1DatabaseId: string | undefined;
+  d1DatabaseName: string | undefined;
   accessTeamDomain: string | undefined;
   accessAud: string | undefined;
   corsOrigins: string | undefined;
@@ -45,6 +47,11 @@ function detectExistingConfig(): ExistingConfig {
   const kvPreviewId =
     flagsNs?.preview_id && flagsNs.preview_id !== "REPLACE_ME_PREVIEW" ? flagsNs.preview_id : undefined;
 
+  // D1 database — find the DB binding
+  const d1Db = service.d1_databases?.find((db) => db.binding === "DB");
+  const d1DatabaseId = d1Db?.database_id && d1Db.database_id !== "" ? d1Db.database_id : undefined;
+  const d1DatabaseName = d1Db?.database_name || undefined;
+
   // SERVICE_URL as a fallback for domain
   const serviceUrlDomain = admin.vars?.SERVICE_URL?.replace(/^https?:\/\//, "");
 
@@ -64,6 +71,8 @@ function detectExistingConfig(): ExistingConfig {
     zoneName: isPlaceholder ? undefined : zoneName,
     kvId,
     kvPreviewId,
+    d1DatabaseId,
+    d1DatabaseName,
     accessTeamDomain,
     accessAud,
     corsOrigins: corsOrigins || undefined,
@@ -273,7 +282,88 @@ export async function setup() {
     }
   }
 
-  // ── Step 4: Cloudflare Access ───────────────────────────────────────
+  // ── Step 4: D1 database (audit log) ─────────────────────────────────
+
+  p.log.step(pc.bold("D1 Database (audit log)"));
+
+  if (existing.d1DatabaseId) {
+    p.log.success(`D1 database already configured: ${pc.cyan(existing.d1DatabaseId)}`);
+    if (existing.d1DatabaseName) {
+      p.log.message(`  Database name: ${pc.cyan(existing.d1DatabaseName)}`);
+    }
+  }
+
+  const createD1 = await p.confirm({
+    message: existing.d1DatabaseId
+      ? "D1 database already exists. Create a new one instead?"
+      : "Create a D1 database for the audit log?",
+    initialValue: !existing.d1DatabaseId,
+  });
+  if (p.isCancel(createD1)) return cancelAndExit();
+
+  let d1DatabaseName = existing.d1DatabaseName ?? "woof-audit";
+
+  if (createD1) {
+    p.log.info(pc.dim(`$ npx wrangler d1 create ${d1DatabaseName}`));
+    s.start("Creating D1 database…");
+    const d1Result = await wrangler(`d1 create ${d1DatabaseName}`, serviceDir(), (line) => {
+      s.message(`Creating D1 database… ${pc.dim(line)}`);
+    });
+
+    if (d1Result.ok) {
+      s.stop("D1 database created");
+
+      const idMatch = d1Result.stdout.match(/database_id\s*=\s*"([^"]+)"/);
+      if (idMatch) {
+        const dbId = idMatch[1];
+        updateServiceD1Id(dbId, d1DatabaseName);
+        p.log.success(`D1 database ID ${pc.cyan(dbId)} written to wrangler.toml`);
+      } else {
+        p.log.warn("Could not parse database ID from wrangler output. Update wrangler.toml manually:");
+        p.log.message(d1Result.stdout);
+      }
+    } else {
+      s.stop("D1 database creation failed");
+      p.log.error(d1Result.stderr || d1Result.stdout);
+      p.log.info("You can create it manually later:");
+      p.log.message(`  cd packages/service && npx wrangler d1 create ${d1DatabaseName}`);
+    }
+  }
+
+  // Run migrations if we have a database configured
+  const currentConfig = detectExistingConfig();
+  if (currentConfig.d1DatabaseName) {
+    const runMigrations = await p.confirm({
+      message: "Apply D1 migrations now?",
+      initialValue: true,
+    });
+    if (p.isCancel(runMigrations)) return cancelAndExit();
+
+    if (runMigrations) {
+      p.log.info(pc.dim(`$ npx wrangler d1 migrations apply ${currentConfig.d1DatabaseName} --remote`));
+      s.start("Applying D1 migrations…");
+      const migrateResult = await wrangler(
+        `d1 migrations apply ${currentConfig.d1DatabaseName} --remote`,
+        serviceDir(),
+        (line) => {
+          s.message(`Applying migrations… ${pc.dim(line)}`);
+        },
+      );
+
+      if (migrateResult.ok) {
+        s.stop("D1 migrations applied");
+      } else {
+        s.stop("Migration failed");
+        p.log.error(migrateResult.stderr || migrateResult.stdout);
+        p.log.info("You can apply migrations manually later:");
+        p.log.message(
+          `  cd packages/service && npx wrangler d1 migrations apply ${currentConfig.d1DatabaseName} --remote`,
+        );
+      }
+    }
+  }
+
+  // ── Step 5: Cloudflare Access ───────────────────────────────────────
 
   p.log.step(pc.bold("Cloudflare Access (SSO)"));
 
@@ -365,7 +455,7 @@ You'll need to configure this in the Cloudflare Zero Trust dashboard.`);
     printAccessGuide(domain);
   }
 
-  // ── Step 5: CORS origins ──────────────────────────────────────────
+  // ── Step 6: CORS origins ──────────────────────────────────────────
 
   p.log.step(pc.bold("CORS"));
   p.log.message(
@@ -459,6 +549,22 @@ function updateServiceKvId(id: string): void {
     ns.id = id;
   } else {
     config.kv_namespaces = [...(config.kv_namespaces ?? []), { binding: "FLAGS", id }];
+  }
+  writeConfig(serviceDir(), config);
+}
+
+/** Update the DB D1 database ID in the service config. */
+function updateServiceD1Id(id: string, name: string): void {
+  const config = readConfig(serviceDir());
+  const db = config.d1_databases?.find((db) => db.binding === "DB");
+  if (db) {
+    db.database_id = id;
+    db.database_name = name;
+  } else {
+    config.d1_databases = [
+      ...(config.d1_databases ?? []),
+      { binding: "DB", database_name: name, database_id: id, migrations_dir: "migrations" },
+    ];
   }
   writeConfig(serviceDir(), config);
 }

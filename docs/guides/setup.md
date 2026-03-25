@@ -24,7 +24,8 @@ The wizard walks you through:
 1. **Domain** — Choose the subdomain for your instance (e.g., `flags.example.com`)
 2. **DNS** — Creates a proxied DNS record pointing to Workers (if your API token has DNS permissions)
 3. **KV namespace** — Creates the `FLAGS` namespace for flag storage
-4. **Cloudflare Access** — Configures your team domain and application audience tag for SSO
+4. **D1 database** — Creates the `woof-audit` database for audit history and applies migrations
+5. **Cloudflare Access** — Configures your team domain and application audience tag for SSO
 
 Once setup completes:
 
@@ -73,7 +74,34 @@ id = "<your-namespace-id>"
 preview_id = "<your-preview-id>"
 ```
 
-### 2. Configure routes
+### 2. Create a D1 database
+
+The audit log is stored in a Cloudflare D1 (SQLite) database.
+
+```sh
+cd packages/service
+npx wrangler d1 create woof-audit
+```
+
+Copy the output `database_id` into `packages/service/wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "woof-audit"
+database_id = "<your-database-id>"
+migrations_dir = "migrations"
+```
+
+Then apply the schema migration:
+
+```sh
+npx wrangler d1 migrations apply woof-audit --remote
+```
+
+For local development, migrations are applied automatically when you run `wrangler dev`.
+
+### 3. Configure routes
 
 Both Workers need route patterns pointing to your subdomain.
 
@@ -103,7 +131,7 @@ zone_name = "example.com"
 
 Cloudflare evaluates routes most-specific-first, so the API routes always match before the catch-all.
 
-### 3. Create a DNS record
+### 4. Create a DNS record
 
 Workers routes require a DNS record on the subdomain. Create a proxied AAAA record:
 
@@ -117,7 +145,7 @@ curl -X POST "https://api.cloudflare.com/client/v4/zones/<zone-id>/dns_records" 
 
 The `100::` address is a placeholder — Cloudflare intercepts the request at the edge and routes it to your Worker.
 
-### 4. Configure Cloudflare Access
+### 5. Configure Cloudflare Access
 
 Woof uses [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/) to protect admin routes with SSO. No passwords or API keys to manage.
 
@@ -171,7 +199,7 @@ ACCESS_TEAM_DOMAIN=https://myteam.cloudflareaccess.com
 ACCESS_AUD=your-application-audience-tag
 ```
 
-### 5. (Optional) Secure OFREP endpoints
+### 6. (Optional) Secure OFREP endpoints
 
 By default, OFREP evaluation endpoints are public. To require authentication, set an API key:
 
@@ -188,7 +216,7 @@ Clients must then include the key in requests via either:
 
 When `OFREP_API_KEY` is not set, evaluation endpoints remain open.
 
-### 6. Configure CORS
+### 7. Configure CORS
 
 Browser-based applications (e.g., using the `@openfeature/ofrep-web-provider`) need CORS headers to call the evaluation API cross-origin. Set the `CORS_ORIGINS` environment variable to a comma-separated list of allowed origins:
 
@@ -213,13 +241,13 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
 When `CORS_ORIGINS` is not set, cross-origin requests are rejected. Server-side SDKs (Node.js, Go, etc.) are not affected since they don't use CORS.
 
-### 7. Deploy
+### 8. Deploy
 
 ```sh
 yarn deploy
 ```
 
-### 8. Verify
+### 9. Verify
 
 ```sh
 # Health check
@@ -261,4 +289,13 @@ yarn install
 yarn deploy
 ```
 
-KV data is preserved across deployments — flag definitions, rules, segments, and audit history persist automatically.
+If there are new D1 migrations, apply them before deploying:
+
+```sh
+cd packages/service
+npx wrangler d1 migrations apply woof-audit --remote
+```
+
+Or re-run `yarn setup` which will detect the existing database and offer to apply pending migrations.
+
+KV data (flags, rules, segments) and D1 data (audit history) are preserved across deployments.

@@ -8,6 +8,7 @@ import type { SettingsStore } from "./store/settings.js";
 export type AppEnv = {
   Bindings: {
     FLAGS: KVNamespace;
+    DB: D1Database;
     /** Cloudflare Access team domain, e.g. "https://myteam.cloudflareaccess.com" */
     ACCESS_TEAM_DOMAIN: string;
     /** Application Audience (AUD) tag from the Cloudflare Access dashboard. */

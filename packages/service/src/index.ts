@@ -38,7 +38,7 @@ app.use("*", async (c, next) => {
   c.set("flagStore", new FlagStore(kv));
   c.set("ruleStore", new RuleStore(kv));
   c.set("segmentStore", new SegmentStore(kv));
-  c.set("auditStore", new AuditStore(kv));
+  c.set("auditStore", new AuditStore(c.env.DB));
   c.set("settingsStore", new SettingsStore(kv));
   await next();
 });

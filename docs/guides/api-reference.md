@@ -308,7 +308,7 @@ List audit entries, newest first. Supports pagination.
 
 | Param | Default | Description |
 |---|---|---|
-| `limit` | 50 | Number of entries to return (max 500) |
+| `limit` | 50 | Number of entries to return |
 | `cursor` | — | Cursor for pagination (from previous response) |
 
 **Response:**
